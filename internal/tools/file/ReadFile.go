@@ -10,12 +10,20 @@ import (
 	"google.golang.org/adk/tool/functiontool"
 )
 
+const (
+	defaultReadLength = 32 * 1024
+	maxReadLength     = 128 * 1024 // 128KB max
+)
+
 type ReadFileArgs struct {
-	Path string `json:"path"`
+	Path   string `json:"path"`
+	Offset int64  `json:"offset,omitempty"`
+	Length int64  `json:"length,omitempty"`
 }
 
 type ReadFileResult struct {
 	Content string `json:"content,omitempty"`
+	Total   int64  `json:"total,omitempty"`
 	Error   string `json:"error,omitempty"`
 }
 
@@ -23,7 +31,8 @@ func ReadFileTool() (tool.Tool, error) {
 	return functiontool.New(functiontool.Config{
 		Name: "ReadFile",
 		Description: `
-Read the contents of a file within the current directory.
+Read the contents of a file within the current directory. Supports optional offset and length.
+Defaults to reading 32KB if length is not specified. Maximum length is 128KB.
 `,
 	}, readFile)
 }
@@ -58,13 +67,46 @@ func readFile(tc tool.Context, args *ReadFileArgs) (*ReadFileResult, error) {
 		return &ReadFileResult{Error: "Access denied: path escaping detected"}, nil
 	}
 
-	// Use root.ReadFile to ensure we don't escape the root
-	data, err := root.ReadFile(relPath)
+	f, err := root.Open(relPath)
 	if err != nil {
 		return &ReadFileResult{
-			Error: fmt.Sprintf("Error reading file %q: %v", args.Path, err),
+			Error: fmt.Sprintf("Error opening file %q: %v", args.Path, err),
+		}, nil
+	}
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		return &ReadFileResult{Error: fmt.Sprintf("Error stating file: %v", err)}, nil
+	}
+	totalSize := info.Size()
+
+	length := args.Length
+	if length <= 0 {
+		length = defaultReadLength
+	}
+	if length > maxReadLength {
+		length = maxReadLength
+	}
+
+	if args.Offset >= totalSize {
+		return &ReadFileResult{Content: "", Total: totalSize}, nil
+	}
+
+	if args.Offset+length > totalSize {
+		length = totalSize - args.Offset
+	}
+
+	buf := make([]byte, length)
+	n, err := f.ReadAt(buf, args.Offset)
+	if err != nil && err.Error() != "EOF" {
+		return &ReadFileResult{
+			Error: fmt.Sprintf("Error reading file at offset %d: %v", args.Offset, err),
 		}, nil
 	}
 
-	return &ReadFileResult{Content: string(data)}, nil
+	return &ReadFileResult{
+		Content: string(buf[:n]),
+		Total:   totalSize,
+	}, nil
 }
