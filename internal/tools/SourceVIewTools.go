@@ -20,5 +20,10 @@ func (t *SourceViewTools) Tools(ctx agent.ReadonlyContext) ([]tool.Tool, error) 
 		return nil, err
 	}
 	tools = append(tools, newTool)
+	newTool, err = file.ReadFileTool()
+	if err != nil {
+		return nil, err
+	}
+	tools = append(tools, newTool)
 	return tools, nil
 }
