@@ -8,11 +8,13 @@ import (
 	"os"
 
 	"github.com/gbrail/codecp/internal"
+	"github.com/gbrail/codecp/internal/tools"
 	"google.golang.org/adk/agent"
 	"google.golang.org/adk/agent/llmagent"
 	"google.golang.org/adk/model/gemini"
 	"google.golang.org/adk/runner"
 	"google.golang.org/adk/session"
+	"google.golang.org/adk/tool"
 	genai "google.golang.org/genai"
 )
 
@@ -40,10 +42,15 @@ func main() {
 	}
 
 	llmAgent, err := llmagent.New(llmagent.Config{
-		Name:        "codecp",
-		Description: "A helpful assistant",
-		Model:       m,
-		Instruction: "You are a helpful assistant.",
+		Name:                 "codecp",
+		Description:          "A helpful assistant",
+		Model:                m,
+		Instruction:          "You are a helpful assistant.",
+		Toolsets:             []tool.Toolset{&tools.SourceViewTools{}},
+		BeforeModelCallbacks: []llmagent.BeforeModelCallback{internal.BeforeModel},
+		AfterModelCallbacks:  []llmagent.AfterModelCallback{internal.AfterModel},
+		BeforeToolCallbacks:  []llmagent.BeforeToolCallback{internal.BeforeTool},
+		AfterToolCallbacks:   []llmagent.AfterToolCallback{internal.AfterTool},
 	})
 	if err != nil {
 		log.Fatalf("failed to create agent: %v", err)
@@ -60,11 +67,14 @@ func main() {
 		log.Fatalf("failed to create runner: %v", err)
 	}
 
-	sessions.Create(ctx, &session.CreateRequest{
+	_, err = sessions.Create(ctx, &session.CreateRequest{
 		AppName:   appName,
 		UserID:    defaultUser,
 		SessionID: defaultSession,
 	})
+	if err != nil {
+		log.Fatalf("failed to create session: %v", err)
+	}
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
