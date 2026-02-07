@@ -2,6 +2,7 @@ package file
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,6 +39,9 @@ Defaults to reading 32KB if length is not specified. Maximum length is 128KB.
 }
 
 func readFile(tc tool.Context, args *ReadFileArgs) (*ReadFileResult, error) {
+	if args.Offset < 0 {
+		return nil, fmt.Errorf("invalid offset")
+	}
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get working directory: %v", err)
@@ -99,7 +103,7 @@ func readFile(tc tool.Context, args *ReadFileArgs) (*ReadFileResult, error) {
 
 	buf := make([]byte, length)
 	n, err := f.ReadAt(buf, args.Offset)
-	if err != nil && err.Error() != "EOF" {
+	if err != nil && err != io.EOF {
 		return &ReadFileResult{
 			Error: fmt.Sprintf("Error reading file at offset %d: %v", args.Offset, err),
 		}, nil

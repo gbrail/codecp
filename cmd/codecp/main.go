@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/gbrail/codecp/internal"
 	"github.com/gbrail/codecp/internal/tools"
@@ -83,6 +84,10 @@ func main() {
 			break
 		}
 		input := scanner.Text()
+		input = strings.TrimSpace(input)
+		if input == "" {
+			continue
+		}
 		if input == "/exit" {
 			break
 		}
