@@ -3,6 +3,7 @@ module github.com/gbrail/codecp
 go 1.25.0
 
 require (
+	github.com/go-git/go-git/v6 v6.0.0-20260206150416-f623c7555599
 	golang.org/x/oauth2 v0.32.0
 	google.golang.org/adk v0.4.0
 	google.golang.org/genai v1.45.0
@@ -20,7 +21,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-git/gcfg/v2 v2.0.2 // indirect
 	github.com/go-git/go-billy/v6 v6.0.0-20260114122816-19306b749ecc // indirect
-	github.com/go-git/go-git/v6 v6.0.0-20260206150416-f623c7555599 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
