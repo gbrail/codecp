@@ -1,9 +1,9 @@
 package git
 
 import (
-	"io"
+	"os/exec"
+	"strconv"
 
-	"github.com/go-git/go-git/v6"
 	"google.golang.org/adk/tool"
 	"google.golang.org/adk/tool/functiontool"
 )
@@ -15,8 +15,8 @@ type LogArgs struct {
 }
 
 type LogResult struct {
-	Commits []string `json:"commits,omitempty"`
-	Error   string   `json:"error,omitempty"`
+	Result string `json:"result,omitempty"`
+	Error  string `json:"error,omitempty"`
 }
 
 func LogTool() (tool.Tool, error) {
@@ -34,32 +34,14 @@ func gitLog(tc tool.Context, args *LogArgs) (*LogResult, error) {
 		maxEntries = args.MaxEntries
 	}
 
-	repo, err := git.PlainOpen(".")
+	cmd := exec.CommandContext(tc, "git", "log", "-n", strconv.Itoa(maxEntries))
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return &LogResult{
 			Error: err.Error(),
 		}, nil
 	}
-
-	var commits []string
-	l, err := repo.Log(&git.LogOptions{})
-	i := 0
-	for {
-		commit, err := l.Next()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return &LogResult{
-				Error: err.Error(),
-			}, nil
-		}
-		if commit == nil || i == maxEntries {
-			break
-		}
-		commits = append(commits, commit.String())
-		i++
-	}
 	return &LogResult{
-		Commits: commits,
+		Result: string(output),
 	}, nil
 }

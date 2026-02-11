@@ -11,7 +11,9 @@ var sourceTools = []func() (tool.Tool, error){
 	file.ListFilesTool,
 	file.ReadFileTool,
 	git.StatusTool,
-	git.LogTool}
+	git.LogTool,
+	git.DiffTool,
+}
 
 type SourceViewTools struct {
 }

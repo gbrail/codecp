@@ -1,7 +1,8 @@
 package git
 
 import (
-	"github.com/go-git/go-git/v6"
+	"os/exec"
+
 	"google.golang.org/adk/tool"
 	"google.golang.org/adk/tool/functiontool"
 )
@@ -9,9 +10,8 @@ import (
 type StatusArgs struct{}
 
 type StatusResult struct {
-	Modified  []string `json:"modified,omitempty"`
-	Untracked []string `json:"untracked,omitempty"`
-	Error     string   `json:"error,omitempty"`
+	Result string `json:"result,omitempty"`
+	Error  string `json:"error,omitempty"`
 }
 
 func StatusTool() (tool.Tool, error) {
@@ -24,38 +24,15 @@ control of git.`,
 	}, gitStatus)
 }
 
-func gitStatus(tc tool.Context, args *StatusArgs) (*StatusResult, error) {
-	repo, err := git.PlainOpen(".")
+func gitStatus(tc tool.Context, _ *StatusArgs) (*StatusResult, error) {
+	cmd := exec.CommandContext(tc, "git", "status")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return &StatusResult{
 			Error: err.Error(),
 		}, nil
-	}
-
-	tree, err := repo.Worktree()
-	if err != nil {
-		return &StatusResult{
-			Error: err.Error(),
-		}, nil
-	}
-
-	status, err := tree.Status()
-	if err != nil {
-		return &StatusResult{
-			Error: err.Error(),
-		}, nil
-	}
-	var modified []string
-	var untracked []string
-	for fileName, s := range status {
-		if s.Worktree == git.Untracked {
-			untracked = append(untracked, fileName)
-		} else if s.Worktree != git.Unmodified || s.Staging != git.Unmodified {
-			modified = append(modified, fileName)
-		}
 	}
 	return &StatusResult{
-		Modified:  modified,
-		Untracked: untracked,
+		Result: string(output),
 	}, nil
 }
