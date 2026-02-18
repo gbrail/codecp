@@ -1,6 +1,7 @@
 package git
 
 import (
+	"log/slog"
 	"os/exec"
 	"strconv"
 
@@ -33,6 +34,7 @@ func gitLog(tc tool.Context, args *LogArgs) (*LogResult, error) {
 	if args.MaxEntries != 0 {
 		maxEntries = args.MaxEntries
 	}
+	slog.DebugContext(tc, "git log", "maxEntries", maxEntries)
 
 	cmd := exec.CommandContext(tc, "git", "log", "-n", strconv.Itoa(maxEntries))
 	output, err := cmd.CombinedOutput()
@@ -41,6 +43,7 @@ func gitLog(tc tool.Context, args *LogArgs) (*LogResult, error) {
 			Error: err.Error(),
 		}, nil
 	}
+	slog.DebugContext(tc, "git log", "result", string(output))
 	return &LogResult{
 		Result: string(output),
 	}, nil

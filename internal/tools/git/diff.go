@@ -1,6 +1,7 @@
 package git
 
 import (
+	"log/slog"
 	"os/exec"
 
 	"google.golang.org/adk/tool"
@@ -28,6 +29,7 @@ tree and the index (staging area). filePath can be used to limit the diff to a s
 }
 
 func gitDiff(tc tool.Context, inputArgs *DiffArgs) (*DiffResult, error) {
+	slog.DebugContext(tc, "git diff", "commit", inputArgs.Commit, "path", inputArgs.Path)
 	var args []string
 	args = append(args, "diff")
 	if inputArgs.Commit != "" && inputArgs.Path != "" {
@@ -45,6 +47,7 @@ func gitDiff(tc tool.Context, inputArgs *DiffArgs) (*DiffResult, error) {
 			Error: err.Error(),
 		}, nil
 	}
+	slog.DebugContext(tc, "git diff", "result", string(output))
 	return &DiffResult{
 		Result: string(output),
 	}, nil

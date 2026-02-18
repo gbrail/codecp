@@ -3,8 +3,10 @@ package main
 import (
 	"bufio"
 	"context"
+	"flag"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -28,16 +30,33 @@ const (
 )
 
 func main() {
+	model := flag.String("f", defaultModel, "LLM model to use")
+	debug := flag.Bool("d", false, "Print debug output")
+	help := flag.Bool("h", false, "Print this message")
+	flag.Parse()
+	if !flag.Parsed() || *help {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
+	var lvl slog.Level
+	if *debug {
+		lvl = slog.LevelDebug
+	} else {
+		lvl = slog.LevelInfo
+	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl})))
+	slog.Debug("debug is on")
+
 	ctx := context.Background()
 
-	// TODO check for GOOGLE_CLOUD_PROJECT
 	config := &genai.ClientConfig{
 		Project:  internal.GetGCPProject(),
 		Location: gcpLocation,
 		Backend:  genai.BackendVertexAI,
 	}
 
-	m, err := gemini.NewModel(ctx, defaultModel, config)
+	m, err := gemini.NewModel(ctx, *model, config)
 	if err != nil {
 		log.Fatalf("failed to create model: %v", err)
 	}
@@ -93,10 +112,8 @@ func main() {
 		}
 
 		userContent := &genai.Content{
-			Parts: []*genai.Part{
-				&genai.Part{Text: input},
-			},
-			Role: "user",
+			Parts: []*genai.Part{{Text: input}},
+			Role:  "user",
 		}
 
 		events := r.Run(ctx, defaultUser, defaultSession, userContent, agent.RunConfig{})

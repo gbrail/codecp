@@ -1,6 +1,7 @@
 package git
 
 import (
+	"log/slog"
 	"os/exec"
 
 	"google.golang.org/adk/tool"
@@ -25,6 +26,7 @@ control of git.`,
 }
 
 func gitStatus(tc tool.Context, _ *StatusArgs) (*StatusResult, error) {
+	slog.DebugContext(tc, "git status")
 	cmd := exec.CommandContext(tc, "git", "status")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -32,6 +34,7 @@ func gitStatus(tc tool.Context, _ *StatusArgs) (*StatusResult, error) {
 			Error: err.Error(),
 		}, nil
 	}
+	slog.DebugContext(tc, "git status", "result", string(output))
 	return &StatusResult{
 		Result: string(output),
 	}, nil

@@ -1,8 +1,10 @@
 package file
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,8 +13,13 @@ import (
 	"google.golang.org/adk/tool/functiontool"
 )
 
+const defaultDepth = 1
+
+var separatorStr = string(filepath.Separator)
+
 type ListFilesArgs struct {
 	Directory string `json:"directory"`
+	Depth     int    `json:"depth"`
 }
 
 type ListFilesResult struct {
@@ -25,12 +32,24 @@ func ListFilesTool() (tool.Tool, error) {
 		Name: "ListFiles",
 		Description: `
 List the files recursively in the specified directory, returning either
-a list of file names or an error.
+a list of file names or an error. The "depth" parameter specifies how deep
+to recurse. This parameter defaults to 1.
 `,
 	}, listFiles)
 }
 
 func listFiles(tc tool.Context, args *ListFilesArgs) (*ListFilesResult, error) {
+	return doListFiles(tc, args)
+}
+
+func doListFiles(tc context.Context, args *ListFilesArgs) (*ListFilesResult, error) {
+	slog.DebugContext(tc, "list files", "directory", args.Directory, "depth", args.Depth)
+
+	depth := args.Depth
+	if depth == 0 {
+		depth = defaultDepth
+	}
+
 	wd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get working directory: %v", err)
@@ -74,6 +93,10 @@ func listFiles(tc tool.Context, args *ListFilesArgs) (*ListFilesResult, error) {
 		if err != nil {
 			return err
 		}
+		nameLen := len(strings.Split(path, separatorStr))
+		if nameLen > depth {
+			return fs.SkipDir
+		}
 		files = append(files, path)
 		return nil
 	})
@@ -82,5 +105,6 @@ func listFiles(tc tool.Context, args *ListFilesArgs) (*ListFilesResult, error) {
 			Error: fmt.Sprintf("Error reading %q: %v", args.Directory, err),
 		}, nil
 	}
+	slog.DebugContext(tc, "list files", "files", files)
 	return &ListFilesResult{Files: files}, nil
 }
